@@ -1,0 +1,88 @@
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: '/api',
+  timeout: 10_000,
+});
+
+// Attach JWT token to every request if present
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('admin_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Auto-logout on 401
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem('admin_token');
+      if (window.location.pathname.startsWith('/admin')) {
+        window.location.href = '/admin/login';
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
+// ── Auth ─────────────────────────────────────────────────────
+export const login = (email, password) =>
+  api.post('/login', { email, password });
+
+// ── Users ────────────────────────────────────────────────────
+export const registerUser = (data) =>
+  api.post('/users/register', data);
+
+export const regenerateQr = (contact) =>
+  api.post('/users/regenerate-qr', { contact });
+
+export const getUser = (uuid) =>
+  api.get(`/users/${uuid}`);
+
+// ── QR ───────────────────────────────────────────────────────
+export const getQrCode = (uuid) =>
+  api.get(`/qrcode/${uuid}`);
+
+// ── Scan ─────────────────────────────────────────────────────
+export const scanQr = (uuid, token, redirect = null) => {
+  const url = redirect
+    ? `/scan/${uuid}/${token}?redirect=${encodeURIComponent(redirect)}`
+    : `/scan/${uuid}/${token}`;
+  // Hit backend directly (not /api prefix)
+  return axios.get(url);
+};
+
+// ── Admin ────────────────────────────────────────────────────
+export const adminGetUsers = (params = {}) =>
+  api.get('/admin/users', { params });
+
+export const adminGetAttendance = (params = {}) =>
+  api.get('/admin/attendance', { params });
+
+export const adminGetStats = () =>
+  api.get('/admin/stats');
+
+export const adminExportCsv = async (params = {}) => {
+  const response = await api.get('/admin/export', {
+    params,
+    responseType: 'blob',
+  });
+
+  // Build a filename from Content-Disposition or fallback
+  const disposition = response.headers['content-disposition'] || '';
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : `attendance_${Date.now()}.csv`;
+
+  // Trigger browser download
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+export default api;

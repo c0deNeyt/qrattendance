@@ -83,8 +83,8 @@ qr-attendance-system/
 ### 1. Clone / download the project
 
 ```bash
-git clone https://github.com/yourname/qr-attendance-system.git
-cd qr-attendance-system
+git clone https://github.com/c0deNeyt/qrattendance.git
+cd qrattendance 
 ```
 
 ### 2. Set up the MySQL database

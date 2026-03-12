@@ -38,8 +38,8 @@ exports.scan = async (req, res) => {
     // 4. Build today's date (UTC)
     const now      = new Date();
     const scanDate = now.toISOString().slice(0, 10);          // YYYY-MM-DD
-    // const scanTime = now.toISOString().slice(11, 19);         // HH:MM:SS
-    const scanTime = new Date().toTimeString().slice(0, 8)	;
+    const scanTime = new Date().toTimeString().slice(0, 8);  // HH:MM:SS
+
 
     // 5. Duplicate check
     const alreadyIn = await Attendance.existsToday(user.id, scanDate);
